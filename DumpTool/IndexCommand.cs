@@ -44,6 +44,13 @@ namespace DumpTool
 			nameCollection.EnsureIndex(document => document.CollectionName);
 			nameCollection.EnsureIndex(document => document.Filename);
 
+			var depGraphFiles = Directory.GetFiles(args.SearchDirectory, "*.depgraphbin");
+			for (var fileIdx = 0; fileIdx < depGraphFiles.Length; fileIdx++)
+			{
+				var depGraph = depGraphFiles[fileIdx];
+				
+			}
+
 			var files = Directory.GetFiles(args.SearchDirectory, "*.forge");
 			for (var fileIdx = 0; fileIdx < files.Length; fileIdx++)
 			{

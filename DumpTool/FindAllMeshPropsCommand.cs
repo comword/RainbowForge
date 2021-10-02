@@ -51,7 +51,7 @@ namespace DumpTool
 
 				try
 				{
-					DumpHelper.SearchNonContainerChildren(assetStream, arc, meshProp, unresolvedExterns);
+					DumpHelper.SearchNonContainerChildren(assetStream, arc, meshProp, unresolvedExterns, forge.Version);
 				}
 				catch
 				{

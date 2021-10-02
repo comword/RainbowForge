@@ -155,7 +155,7 @@ namespace RainbowForge.Dump
 			obj.WriteTo(filename);
 		}
 
-		public static void DumpNonContainerChildren(string rootDir, BinaryReader assetStream, FlatArchive arc, FlatArchiveEntry entry, List<KeyValuePair<string, ulong>> unresolvedExterns)
+		public static void DumpNonContainerChildren(string rootDir, BinaryReader assetStream, FlatArchive arc, FlatArchiveEntry entry, List<KeyValuePair<string, ulong>> unresolvedExterns, uint version)
 		{
 			void TryRecurseChildren(string dir, ulong uid)
 			{
@@ -164,7 +164,7 @@ namespace RainbowForge.Dump
 
 				var arcEntry = arc.Entries.FirstOrDefault(archiveEntry => archiveEntry.MetaData.Uid == uid);
 				if (arcEntry != null)
-					DumpNonContainerChildren(dir, assetStream, arc, arcEntry, unresolvedExterns);
+					DumpNonContainerChildren(dir, assetStream, arc, arcEntry, unresolvedExterns, version);
 				else if (uid >> 24 == 0xF8)
 					Console.WriteLine($"Link container node references unresolved internal UID {uid} (0x{uid:X16})");
 				else if (uid != 0)
@@ -213,7 +213,7 @@ namespace RainbowForge.Dump
 				}
 				case Magic.Mesh:
 				{
-					var meshProps = Mesh.Read(assetStream);
+					var meshProps = Mesh.Read(assetStream, version, false);
 					TryRecurseChildren(Path.Combine(rootDir, $"{entry.MetaData.Uid} {nameof(Magic.Mesh)}"), meshProps.CompiledMeshObjectUid);
 
 					foreach (var materialContainer in meshProps.Materials)
@@ -222,7 +222,7 @@ namespace RainbowForge.Dump
 				}
 				case Magic.TextureMap:
 				{
-					var mipSet = TextureMap.Read(assetStream);
+					var mipSet = TextureMap.Read(assetStream, version, false);
 					foreach (var uid in mipSet.TexUidMipSet1.Where(arg => arg != 0 && unresolvedExterns.All(pair => pair.Value != arg)))
 						unresolvedExterns.Add(new KeyValuePair<string, ulong>(rootDir, uid));
 					foreach (var uid in mipSet.TexUidMipSet2.Where(arg => arg != 0 && unresolvedExterns.All(pair => pair.Value != arg)))
@@ -256,7 +256,7 @@ namespace RainbowForge.Dump
 			}
 		}
 
-		public static void SearchNonContainerChildren(BinaryReader assetStream, FlatArchive arc, FlatArchiveEntry entry, List<ulong> referencedExterns)
+		public static void SearchNonContainerChildren(BinaryReader assetStream, FlatArchive arc, FlatArchiveEntry entry, List<ulong> referencedExterns, uint version)
 		{
 			if (!referencedExterns.Contains(entry.MetaData.Uid))
 				referencedExterns.Add(entry.MetaData.Uid);
@@ -271,7 +271,7 @@ namespace RainbowForge.Dump
 
 				var arcEntry = arc.Entries.FirstOrDefault(archiveEntry => archiveEntry.MetaData.Uid == uid);
 				if (arcEntry != null)
-					SearchNonContainerChildren(assetStream, arc, arcEntry, referencedExterns);
+					SearchNonContainerChildren(assetStream, arc, arcEntry, referencedExterns, version);
 			}
 
 			assetStream.BaseStream.Seek(entry.PayloadOffset, SeekOrigin.Begin);
@@ -297,7 +297,7 @@ namespace RainbowForge.Dump
 				}
 				case Magic.Mesh:
 				{
-					var meshProps = Mesh.Read(assetStream);
+					var meshProps = Mesh.Read(assetStream, version, false);
 					TryRecurseChildren(meshProps.CompiledMeshObjectUid);
 
 					foreach (var materialContainer in meshProps.Materials)
@@ -306,7 +306,7 @@ namespace RainbowForge.Dump
 				}
 				case Magic.TextureMap:
 				{
-					var mipSet = TextureMap.Read(assetStream);
+					var mipSet = TextureMap.Read(assetStream, version, false);
 					foreach (var uid in mipSet.TexUidMipSet1.Where(arg => arg != 0 && !referencedExterns.Contains(arg)))
 						referencedExterns.Add(uid);
 					foreach (var uid in mipSet.TexUidMipSet2.Where(arg => arg != 0 && !referencedExterns.Contains(arg)))

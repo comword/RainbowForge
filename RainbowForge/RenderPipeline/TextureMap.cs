@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace RainbowForge.RenderPipeline
 {
@@ -25,29 +26,43 @@ namespace RainbowForge.RenderPipeline
 			Data2 = data2;
 		}
 
-		public static TextureMap Read(BinaryReader r)
+		public static TextureMap Read(BinaryReader r, uint version, bool hasHeader)
 		{
+			if (hasHeader)
+				FileMetaData.Read(r, version);
 			var magic = r.ReadUInt32();
 			MagicHelper.AssertEquals(Magic.TextureMap, magic);
 
-			var var1 = r.ReadUInt32();
-			var var2 = r.ReadUInt32();
-			var var3 = r.ReadUInt32();
-			var var4 = r.ReadUInt32();
+			switch (version)
+			{
+				case >= 30:
+					{
+						var var1 = r.ReadUInt32();
+						var var2 = r.ReadUInt32();
+						var var3 = r.ReadUInt32();
+						var var4 = r.ReadUInt32();
 
-			var data = r.ReadBytes(52);
+						var data = r.ReadBytes(52);
 
-			var texUidMipSet1 = new ulong[5];
-			for (var i = 0; i < 5; i++)
-				texUidMipSet1[i] = r.ReadUInt64();
+						var texUidMipSet1 = new ulong[5];
+						for (var i = 0; i < 5; i++)
+							texUidMipSet1[i] = r.ReadUInt64();
 
-			var texUidMipSet2 = new ulong[5];
-			for (var i = 0; i < 5; i++)
-				texUidMipSet2[i] = r.ReadUInt64();
+						var texUidMipSet2 = new ulong[5];
+						for (var i = 0; i < 5; i++)
+							texUidMipSet2[i] = r.ReadUInt64();
 
-			var data2 = r.ReadBytes(32);
+						var data2 = r.ReadBytes(32);
 
-			return new TextureMap(var1, var2, var3, var4, data, texUidMipSet1, texUidMipSet2, data2);
+						return new TextureMap(var1, var2, var3, var4, data, texUidMipSet1, texUidMipSet2, data2);
+					}
+				// case <= 29:
+				//     {
+
+				//     }
+				default:
+					throw new NotImplementedException($"Unsupported version {version}");
+			}
 		}
 	}
 }

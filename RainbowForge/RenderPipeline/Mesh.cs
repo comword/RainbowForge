@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using RainbowForge.Model;
 using RainbowForge.Structs;
 
@@ -31,36 +32,49 @@ namespace RainbowForge.RenderPipeline
 			Data2 = data2;
 		}
 
-		public static Mesh Read(BinaryReader r)
+		public static Mesh Read(BinaryReader r, uint version, bool hasHeader)
 		{
+			if (hasHeader)
+				FileMetaData.Read(r, version);
 			var magic = r.ReadUInt32();
 			MagicHelper.AssertEquals(Magic.Mesh, magic);
+			switch (version)
+			{
+				case >= 30:
+					{
+						var var1 = r.ReadUInt32();
 
-			var var1 = r.ReadUInt32();
+						var internalUid = r.ReadUInt64();
 
-			var internalUid = r.ReadUInt64();
+						var data = r.ReadBytes(32);
 
-			var data = r.ReadBytes(32);
+						var numBones = r.ReadUInt32();
+						var bones = new MeshBone[numBones];
+						for (var i = 0; i < bones.Length; i++)
+							bones[i] = MeshBone.Read(r);
 
-			var numBones = r.ReadUInt32();
-			var bones = new MeshBone[numBones];
-			for (var i = 0; i < bones.Length; i++)
-				bones[i] = MeshBone.Read(r);
+						var magic2 = r.ReadUInt32();
+						var var2 = r.ReadUInt32();
 
-			var magic2 = r.ReadUInt32();
-			var var2 = r.ReadUInt32();
+						var meshUid = r.ReadUInt64();
 
-			var meshUid = r.ReadUInt64();
+						var numMaterialContainers = r.ReadUInt32();
+						var materialContainers = new ulong[numMaterialContainers];
+						for (var i = 0; i < materialContainers.Length; i++)
+							materialContainers[i] = r.ReadUInt64();
 
-			var numMaterialContainers = r.ReadUInt32();
-			var materialContainers = new ulong[numMaterialContainers];
-			for (var i = 0; i < materialContainers.Length; i++)
-				materialContainers[i] = r.ReadUInt64();
+						var internalUid2 = r.ReadUInt64();
+						var data2 = r.ReadBytes(25);
 
-			var internalUid2 = r.ReadUInt64();
-			var data2 = r.ReadBytes(25);
+						return new Mesh(var1, internalUid, data, bones, magic2, var2, meshUid, materialContainers, internalUid2, data2);
+					}
+				// case <= 29:
+				//     {
 
-			return new Mesh(var1, internalUid, data, bones, magic2, var2, meshUid, materialContainers, internalUid2, data2);
+				//     }
+				default:
+					throw new NotImplementedException($"Unsupported version {version}");
+			}
 		}
 	}
 

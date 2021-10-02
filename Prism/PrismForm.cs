@@ -79,7 +79,7 @@ namespace Prism
 
 		private void DumpSelectionAsObj(string outputDir, object o)
 		{
-			var (_, assetMetaData, streamProvider) = GetAssetStream(o);
+			var (streamType, assetMetaData, streamProvider) = GetAssetStream(o);
 			using var stream = streamProvider.Invoke();
 
 			if (MagicHelper.GetFiletype(assetMetaData.Magic) == AssetType.Mesh)
@@ -131,7 +131,7 @@ namespace Prism
 			}
 			else if (MagicHelper.Equals(Magic.Mesh, assetMetaData.Magic))
 			{
-				var header = Mesh.Read(stream);
+				var header = Mesh.Read(stream, _openedForge.Version, streamType == AssetStreamType.ForgeEntry);
 
 				var boneModel = ObjFile.FromStream(ResourceHelper.GetResource("bone.obj"));
 
@@ -373,7 +373,7 @@ namespace Prism
 						case Magic.Mesh:
 						{
 							using var stream = assetStream.StreamProvider.Invoke();
-							var mp = Mesh.Read(stream);
+							var mp = Mesh.Read(stream, _openedForge.Version, assetStream.StreamType == AssetStreamType.ForgeEntry);
 
 							entries = new List<TreeListViewEntry>
 							{
@@ -436,7 +436,7 @@ namespace Prism
 						case Magic.TextureMap:
 						{
 							using var stream = assetStream.StreamProvider.Invoke();
-							var mc = TextureMap.Read(stream);
+							var mc = TextureMap.Read(stream, _openedForge.Version, assetStream.StreamType == AssetStreamType.ForgeEntry);
 
 							entries = new List<TreeListViewEntry>
 							{
